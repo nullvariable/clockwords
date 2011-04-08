@@ -6,6 +6,8 @@ $folder = '/home/doug/Desktop/clockwords/';
 require_once $folder.'classes/class.cliinputs.php';
 require_once $folder.'classes/class.clockwords.php';
 require_once $folder.'constants.php';
+require_once $folder.'dpr.php';
+$GLOBALS[CLOCKWORDS_DEBUG] = TRUE;
 
 class cliinputsTest extends PHPUnit_Framework_TestCase {
   private $inputs;
@@ -23,9 +25,7 @@ class cliinputsTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals(count($act3), 2);
   }
   public function testInput_Invalid() {
-    try {
-      cliinputs::process_input(" ");
-    } catch (Exception $e) { return; }
-    $this->fail("invalid input exception expected");
+    $this->setExpectedException('Exception');
+    cliinputs::process_input(" ");
   }
 }
