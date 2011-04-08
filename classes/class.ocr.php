@@ -27,25 +27,54 @@ class ocr {
     exec($cmd);
     return $imgname;
   }
+  /**
+   * trimImage takes a given file and crops it to the coordinates defined in
+   * the constants file
+   * @param string $filename
+   * @return bool true/false on success
+   */
+  function trimImage($filename) {
+    if (!file_exists($filename)) {
+      throw new Exception("cannot find image to crop: $filename");
+    } else {
+      $imagestats = getimagesize($filename);
+      dpr($imagestats,true,false);
+      if (empty($imagestats['mime']) || $imagestats['mime'] != 'image/png') {
+        throw new Exception("$filename does not appear to be a valid png image");
+        return false;
+      }
+    }
+    if (!is_numeric(CLOCKWORDS_CROP_X) || !is_numeric(CLOCKWORDS_CROP_Y) || !is_numeric(CLOCKWORDS_CROP_WIDTH) || !is_numeric(CLOCKWORDS_CROP_HEIGHT)) {
+      throw new Exception("oops, something is wrong with our dimesion constants");
+    }
+    $finalimg = imagecreatetruecolor(CLOCKWORDS_CROP_WIDTH,CLOCKWORDS_CROP_HEIGHT);
+    $screenshot = imagecreatefrompng($filename);
+    imagecopyresampled(
+      $finalimg,
+      $screenshot,
+      0,
+      0,
+      CLOCKWORDS_CROP_X,
+      CLOCKWORDS_CROP_Y,
+      CLOCKWORDS_CROP_WIDTH,
+      CLOCKWORDS_CROP_HEIGHT,
+      CLOCKWORDS_CROP_WIDTH,
+      CLOCKWORDS_CROP_HEIGHT
+    );
+    imagepng($finalimg, $filename);
+    imagedestroy($finalimg);
+    imagedestroy($screenshot);
+    if (file_exists($filename)) {
+      return true;
+    }
+    return false;
+  }
 }
 /*
  
  
 
-function trim_image($filename) {
-  $start_crop_x = 332;
-  $start_crop_y = 634;
-  $width = 296;
-  $height = 16;
-  
-  $finalimg = imagecreatetruecolor($width,$height);
-  $screenshot = imagecreatefrompng($filename);
-  imagecopyresampled($finalimg, $screenshot, 0, 0, $start_crop_x, $start_crop_y, $width, $height, $width, $height);
-  imagepng($finalimg, $filename);
-  imagedestroy($finalimg);
-  imagedestroy($screenshot);  
-  //print "\ntrimmed: ".$filename;
-}
+
 function convert_to_pnm($filename) {
   $img = imagecreatefromjpeg($filename);
   //imagejpeg($img, $filename.'.jpg');
