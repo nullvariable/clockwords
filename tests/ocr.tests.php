@@ -78,5 +78,85 @@ class ocrTest extends PHPUnit_Framework_TestCase {
       $this->fail("expected exception for non-existant file");
     }
   }
-
+  public function testrgb_to_array() {
+    $result = $this->ocr->rgb_to_array(11899506);
+    $this->assertEquals(count($result), 3, "rgb_to_array should return three elements, and it didn't");
+    if (!empty($result) && is_array($result)) {
+      foreach ($result as $color) {
+        $this->assertTrue(is_numeric($color));
+      }
+    } else {
+      $this->fail("rgb_to_array didn't return an array, unable to check values");
+    }
+  }
+  public function testrgb_to_array_Invalid() {
+    try {
+      $this->ocr->rgb_to_array("");
+      $this->ocr->rgb_to_array("bad apple");
+    } catch (Exception $e) {
+      return;
+    }
+    $this->fail("expected exception failed for rgb_to_array");
+  }
+  public function testCleanImg() {
+    $source = CLOCKWORDS_ROOT."tests/images/cropped.png";
+    $imgname = CLOCKWORDS_ROOT."temp/cleanme.png";
+    $copied = copy($source, $imgname);
+    if (!$copied) {
+      $this->fail('couldn\'t copy files to clean image');
+    }
+    $result = $this->ocr->cleanImg($imgname);
+    $imagesize = getimagesize($result);
+    $this->assertEquals($imagesize[0], CLOCKWORDS_CROP_WIDTH);
+    $this->assertEquals($imagesize[1], CLOCKWORDS_CROP_HEIGHT);
+    $this->assertEquals($imagesize['mime'], 'image/jpeg');
+    unlink($result);
+  }
+  public function testCleanImg_Invalid() {
+    try {
+      $result = $this->ocr->cleanImg("");
+    } catch (Exception $e) {
+      return;
+    }
+    $this->fail("expected exception for bad image missing");
+  }
+  public function testConvertToPNM() {
+    $source = CLOCKWORDS_ROOT."tests/images/ocr-ready-l.jpg";
+    $imgname = CLOCKWORDS_ROOT."temp/ocr-ready.jpg";
+    $copied = copy($source, $imgname);
+    if (!$copied) {
+      $this->fail('couldn\'t copy files to convert to PNM image');
+    }
+    $result = $this->ocr->convertToPNM($imgname);
+    dpr(array('$result',$result,stristr($result, 'pnm')));
+    $this->assertTrue(file_exists($result));
+    $this->assertLessThan(strpos($result, 'pnm'), 0);
+    unlink($result);
+  }
+  public function testConvertToPNM_Invalid() {
+    try {
+      $result = $this->ocr->convertToPNM("fake.jpg");
+    } catch (Exception $e) {
+      return;
+    }
+    $this->fail("expected exception for bad image missing");
+  }
+  public function testGetSomeText() {
+    $source = CLOCKWORDS_ROOT."tests/images/ocr-ready-l.pnm";
+    $imgname = CLOCKWORDS_ROOT."temp/ocr-ready-l.pnm";
+    $copied = copy($source, $imgname);
+    if (!$copied) {
+      $this->fail('couldn\'t copy files to convert to PNM image');
+    }
+    $result = $this->ocr->getSomeText($imgname);
+    $this->assertTrue($result == 'L', "couldn't find the L in our test image");
+  }
+  public function testGetSomeText_Invalid() {
+    try {
+      $this->ocr->getSomeText("fake.pnm");
+    } catch (Exception $e) {
+      return;
+    }
+    $this->fail("expected exception for GetSomeText did not fire");
+  }
 }
