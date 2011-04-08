@@ -1,0 +1,46 @@
+#!/usr/bin/php
+<?php
+
+$words = file('/usr/share/dict/words');
+$outname = 'temp/words.txt';
+$f = fopen($outname, 'a+');
+foreach ($words as $line => $word) {
+  if (test_word($word)) {
+    fwrite($f,$word);
+    print "$line wrote: $word";
+  }
+}
+fclose($f);
+
+function test_word($word) {
+  $length = strlen($word);
+  if ($length >= 3 ) {
+    if (strpos($word, "'") === false && strtolower($word) === $word) {
+      //there are no apostrophes or caps in this word so continue
+      $p = '/[\x80-\xFF]/u';
+      if (!preg_match($p, $word)) {
+        return TRUE;
+      }
+    }
+  }
+  return FALSE;
+}
+/*
+$words = file('temp/words.txt');
+
+//preg_match('/[dbt]/', )
+
+$filtered = array_filter($words, 'dwh_filter');
+function dwh_filter($var) {
+  $ocr = array('q'=>5);
+  foreach ($ocr as $key => $p) {
+    if (strpos($var, $key) !== FALSE) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+print "\n".count($words);
+print "\n".count($filtered);
+*/

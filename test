@@ -1,0 +1,440 @@
+#!/usr/bin/php
+<?php
+
+function words_load(&$words,$num) {
+  
+  $i = 1;
+  while ($i <= $num) {
+    $key = get_word($words);
+    if (!empty($key) && $key > 0) {
+      $word = $words[$key];
+    }
+    if (!empty($word) && strlen($word) > 0) {
+      unset($words[$key]);
+      print "\n$i : ".$word;
+      $return[] = $word;
+      $i++;
+      
+    }
+  }
+  return $return;
+}
+function dwh_filter($var) {
+  $ocr = get_desired();
+  foreach ($ocr as $key => $p) {
+    if (strpos($var, $key) !== FALSE) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+function get_word($words) {
+  $sanity = 0; $return = 0;
+  $toolong = microtime(true)+2;
+  //$dletters = count(get_desired());
+  $desired_score = 0;
+  foreach (get_desired() as $l => $point) {
+    $desired_score=$desired_score+$point;
+  }
+  dbg("desired_score: $desired_score");
+  /*if ($dletters < 3) {
+    $filtered = array_filter($words, 'dwh_filter');
+  }*/
+  if (empty($words) || count($words) < 1) {
+    $GLOBALS['numfailures']++;
+    return false;
+  }
+  while ($return==0 && $sanity < 1000) {
+    $key = /*(count($filtered) > 2 && $sanity < 100) ? array_rand($filtered) :*/ array_rand($words);
+    $word = $words[$key];
+    //now filter the word
+    $length = strlen($word);
+    //dbg("\ndesired score: $desired_score");
+    if (check_letters($word) >= $desired_score) {
+      dbg($word."\n");
+      $return = $key;
+    } elseif (microtime(true) >= $toolong) {
+      $desired_score--;
+      $toolong+0.5;
+    }
+    $sanity++;
+  //dbg("\nget_word: ".print_r(array($word,$return,$desired_score,$toolong))."\n");
+  }
+  return $return;
+}
+
+function check_letters($word) {
+  //global $pointvalues;
+  $desired = get_desired();
+  /*$secondary = array(
+    'r' => 2,
+    's' => 2,
+    't' => 2,
+    'l' => 2,
+    'n' => 2,
+    'e' => 2,
+  );*/
+  $score = 0;//4 - count($desired); //start with a default score matching the check score and reduce it by the number of letters avaliable
+  foreach ($desired as $letter => $points) {
+    if (is_string($letter) && strlen($letter) > 0) {
+      if (strpos($word, $letter) !== FALSE) {
+        $score= $score+$points;
+      } /*elseif (key_exists($letter, $secondary)) {
+        $score= $score+$secondary[$letter];
+      }*/ else {
+        //$score++;
+      }
+    }
+    //print"\n";print_r(get_defined_vars());print"\n";
+  }
+  dbg("\n$word score: $score ");
+  return $score;
+}
+
+function do_it($word) {
+  //foreach ($useful as $word) {
+    
+    if (!empty($word) && strlen($word) > 1) {
+      $cmd = 'xte "key Escape"';
+      foreach (str_split(trim($word)) as $letter) {
+        //if (strlen(trim($letter)) > 0) {
+          $cmd .= ' "key '.$letter.'"';
+        //}
+      }
+      $cmd .= ' "key Return"';
+      //print $cmd;
+      exec($cmd);
+    } else {
+      $GLOBALS['numfailures']++;
+      print "\nBad word\n";
+    }
+  //}
+}
+
+
+function screen_grab() {
+  while (empty($imgname)) {
+    $uid = uniqid('', TRUE);
+    $imgname = "temp/".$uid.".png";
+    if (file_exists($imgname)) {
+      print $imgname;
+      unset($imgname,$uid);
+    }
+  }
+  $cmd = "scrot ".$imgname;
+  exec($cmd);
+  return $imgname;
+}
+
+function trim_image($filename) {
+  $start_crop_x = 332;
+  $start_crop_y = 634;
+  $width = 296;
+  $height = 16;
+  
+  $finalimg = imagecreatetruecolor($width,$height);
+  $screenshot = imagecreatefrompng($filename);
+  imagecopyresampled($finalimg, $screenshot, 0, 0, $start_crop_x, $start_crop_y, $width, $height, $width, $height);
+  imagepng($finalimg, $filename);
+  imagedestroy($finalimg);
+  imagedestroy($screenshot);  
+  //print "\ntrimmed: ".$filename;
+}
+function convert_to_pnm($filename) {
+  $img = imagecreatefromjpeg($filename);
+  //imagejpeg($img, $filename.'.jpg');
+  //unlink($filename);
+  //imagedestroy($img);
+  //$filename = $filename.".jpg";
+  $newfilename = str_replace('.jpg', '.pnm', $filename);
+  $cmd = "djpeg -pnm -gray $filename > ".$newfilename;
+  exec($cmd);
+  unlink($filename);
+  return $newfilename;
+}
+function clean_img($filename) {
+  $img = imagecreatefrompng($filename);/*
+  $index = imagecolorclosest ( $img,  /*106,85,64*//*240, 222, 210 );
+  imagecolorset($img,$index,0,255,0); // SET NEW COLOR
+  */
+  $out = ImageCreateTrueColor(imagesx($img),imagesy($img)) or die('Problem In Creating image');
+
+  for ($x = 0; $x < imagesx($img); $x++) {
+    for ($y = 0; $y < imagesy($img); $y++) {
+      $src_pix = imagecolorat($img,$x,$y);
+      $pix_rgb = rgb_to_array($src_pix);
+      if ($pix_rgb[0] > 180 && $pix_rgb[1] > 180 && $pix_rgb[2] > 180) {
+        //do nothing
+      } elseif ($pix_rgb[1] != 255) {
+        $pix_rgb = array(0,0,0);
+      }
+
+
+      imagesetpixel($out, $x, $y, imagecolorallocate($out, $pix_rgb[0], $pix_rgb[1], $pix_rgb[2]));
+    }
+  }
+
+  //$elements = explode('.', $filename);
+  unlink($filename);
+  $imgname = str_replace(".png", ".jpg", $filename);
+  imagejpeg($out, $imgname ); 
+  imagedestroy($img);
+  imagedestroy($out);
+  //print_r(get_defined_vars());die();
+  return $imgname;
+}
+function rgb_to_array($rgb) {
+    $a[0] = ($rgb >> 16) & 0xFF;
+    $a[1] = ($rgb >> 8) & 0xFF;
+    $a[2] = $rgb & 0xFF;
+
+    return $a;
+}
+
+function gocr($filename, $destroy = true) {
+  $cmd = "gocr ".$filename;
+  $result = exec($cmd);
+  if ($destroy) {
+    unlink($filename);
+  }
+  if (strlen($result) == 0) {
+    $result = 'rstlne';
+    $GLOBALS['numfailures']++;
+  }
+  return str_replace('5', 's', $result);
+}
+function get_desired($type = 'default') {
+  global $pointsvalues;
+  static $desired;
+  static $ocr;
+  static $lastscreen;
+  if ($type == 'default') {
+    if (empty($lastscreen) || time() > $lastscreen+1 || empty($desired)) {
+      if (isset($desired)) { unset($desired); }
+      $img = screen_grab();
+      $lastscreen = time();
+      trim_image($img);
+      $img = clean_img($img);
+      $img = convert_to_pnm($img);
+      //$img = 'temp/result.pnm';
+      $ocr = strtolower(gocr($img));
+      //print_r(str_split(strtolower(gocr($img))));die();
+      $predesired = str_split(trim($ocr));
+      if (!empty($predesired) && count($predesired) > 0) {
+        foreach ($predesired as $letter) {
+          if (strlen($letter) > 0)
+            $desired[$letter] = get_points($letter);
+        }
+        //print "\n\nOCR says desired letters are: ";print_r($desired);
+      } else {
+        print "\nNo OCR characters found in $img\n$ocr\n";
+        return array();
+      }
+    }
+    return $desired;
+  } else {
+    return $ocr;
+  }
+}
+
+function get_points($letter) {
+  $pointvalues = array(
+    5=>'aeirs',
+    10=>'dglont',
+    15=>'bchmpu',
+    20=>'fkvwy',
+    25=>'jqxz',
+  );
+  foreach ($pointvalues as $points => $letters) {
+    if (strpos($letters, $letter) !== FALSE) {
+      return $points;
+    }
+  }
+  return 2;
+}
+
+/*
+$x = screen_grab();
+trim_image($x);
+//$x = convert_to_pnm($x);
+passthru("eog ".$x);
+*/
+/*
+$x = gocr('temp/result.pnm');
+print_r($x);*/
+
+/*
+$useful = words_load();*/
+
+$numfailures = 0;
+$words = file('temp/words.txt');
+fwrite(STDOUT, "Ready?");
+$ready = trim(fgets(STDIN));
+
+if (!empty($ready)) {
+  $w = new dict_word();
+  if ($ready == 't') {/*
+    //$img = screen_grab();
+    $img = "temp/4d9e699a955657.34699551.png";
+    clean_img($img);
+    exec('eog '.$img);*/
+    dbg("\n fetch: ");
+    dbg(print_r($w->shrink(array('q'=>25,'z'=>20))));
+    die();
+  }
+  sleep(3);
+  $endtime = time()+60;
+  while (time() < $endtime) {
+    //$useful = words_load($words, 2);
+    $starttime = microtime(true);
+    //$key = get_word($words);
+    //if (key_exists($key, $words)) {
+      do_it($w->fetch());
+      dbg("\nstarttime: $starttime");
+      dbg("\nnow: ".microtime(true));
+      if (microtime(true) <= $starttime+100) { sleep(1); }
+    //}
+    if ($GLOBALS['numfailures'] > 5) {
+      die("\nexiting, experienced 5 or more failures");
+    }
+  }
+}
+
+function dbg($msg) {
+  static $lmsg;
+  if ($GLOBALS['ready'] == 'd' || $GLOBALS['ready'] == 't') {
+    print "\n".$msg;
+  }
+  if ($lmsg == $msg) {
+    if ($GLOBALS['numfailures'] > 5) {
+      die("\nexiting, experienced 5 or more failures");
+    }
+    $GLOBALS['numfailures']++;
+  }
+  $lmsg = $msg;
+}
+
+class dict_word {
+  private $words;
+  static $alphabet;
+  function __construct() {
+    $this->words = file('temp/words.txt');
+  }
+  function shrink($priority_letters) {
+    //return a word
+    //print_r($priority_letters);die();
+    arsort($priority_letters);
+    $this->merged = array();
+    $count = 0;
+    foreach ($priority_letters as $letter => $priority) {
+      if (preg_match('/[a-z]/',$letter)) {
+        if (empty($this->alphabet[$letter])) {
+          $this->afilterkey = $letter;
+          $this->alphabet[$letter] = array_filter($this->words, array('self','afilter'));
+          unset($this->afilterkey);
+          dbg("\n array $letter: ".count($this->alphabet[$letter]));
+        }
+        $count++;
+        $this->merged = array_merge($this->merged,$this->alphabet[$letter]);
+      }
+    }
+    //ok now we have multiple arrays with each one holding 1 letter, lets narrow it recursively
+    if ($count > 1) {
+      $ret = $this->narrow($priority_letters);
+      if (count($ret) < 100) { $ret = $this->merged; }
+    } else {
+      $ret = $this->merged;
+    }
+    //die('post narrow');
+
+    //dbg("\n".print_r($mkeys));
+    //$merged = array_merge($mkeys);
+    /*dbg("\n".count($merged));/*
+    $keys = array_rand($merged, 10);
+    foreach ($keys as $key) {
+      $return[] = $merged[$key];
+    }*/
+    return $ret;
+  }
+  function fetch() {
+    $shrunk = $this->shrink(get_desired());
+    //print "\n".count($shrunk);
+    $key = get_word($shrunk);
+    $x = 0;
+    while (empty($shrunk[$key])) {
+      $key = get_word($shrunk);
+      dbg('extra shrinkage');
+      if ($x == 3) {
+        return $this->words[$key];
+      }
+    }
+    return $shrunk[$key];
+  }
+  function afilter($var) {
+    if (strpos($var, $this->afilterkey) !== FALSE) {
+      return true;
+    }
+    return false;
+  }
+  function narrow($priority_letters) {
+    dbg('narrowing');
+    //dbg("count of merged before: ".count($this->merged));
+    $pattern = '/'.$this->setpattern($priority_letters).'/';
+    $this->bfp = $pattern;
+    $filtered = array_filter($this->merged, array('self','bfilter'));
+    //dbg($pattern);dbg(print_r($filtered));//die("\n");
+    $sanity = 0; $last_pattern = '';
+    while (count($filtered < 10)) {
+      $pattern = $this->adjust_pattern($pattern);
+      $this->bfp = $pattern;
+      $filtered = array_filter($this->merged, array('self','bfilter'));
+      //dbg("pattern: ".$pattern);dbg('count filtered: '.count($filtered));
+      $sanity++;
+      if ($last_pattern == $pattern) { break; }
+      $last_pattern = $pattern;
+    }
+    //dbg(print_r(get_defined_vars()));
+    //die();
+    //if (count($filtered) <)
+  }
+  function bfilter($var) {
+    $pattern = $this->bfp;
+    //dbg($pattern);
+    if (preg_match($pattern, $var)) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+  function adjust_pattern($pattern) {
+    $letters = str_replace(array('[', ']','/'), '',$pattern);
+    $len = strlen($letters);
+    if ($len > 1) {
+      $shrink = substr($letters, 0, $len-1);
+      $a = str_split($shrink);
+      foreach ($a as $l) {
+        $p[$l] = 5;
+      }
+      $return = '/'.$this->setpattern($p).'/';
+      
+    /*$brackets = explode(']', str_replace('/','',$pattern));
+    $len = strlen($brackets[0]);
+    if ($len > 2) {
+      
+      $breakout = substr($brackets[0], $len-1, 1);
+      $start = substr($brackets[0], 0, $len-1);
+      $end = (count($brackets) > 2) ? substr(str_replace('/','',$pattern), $len) : '';
+      $return = '/'.$start.']/';*/
+    } else {
+      $return = $pattern;
+    }
+    //print_r(get_defined_vars());die("\n brackts");
+    return $return;
+  }
+  function setpattern($pl) {
+    $r = '';
+    foreach ($pl as $l => $p) {
+      if (preg_match('/[a-z]/', $l)) { $r .= "[$l]"; }
+    }
+    return $r;
+  }
+}

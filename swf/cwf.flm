@@ -1,0 +1,24 @@
+movie 'ClockwordsFlash.swf' // flash 10, total frames: 2, frame rate: 24 fps, 700x525 px
+  
+  fileAttributes attrUseNetwork,attrActionScript3
+  
+  scriptLimits recursion 1000 timeout 60
+
+  defineMovieClip 3 // total frames: 1
+  end // of defineMovieClip 3
+
+  defineMovieClip 4 // total frames: 50
+  end // of defineMovieClip 4
+  
+  // unknown tag 87 length 229
+  
+  // unknown tag 82 length 32670
+  
+  // unknown tag 76 length 95
+  
+  // unknown tag 87 length 7184180
+  
+  // unknown tag 82 length 191
+  
+  // unknown tag 76 length 23
+end

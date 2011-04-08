@@ -1,0 +1,47 @@
+#!/usr/bin/php
+<?php
+
+/*
+ Autoload our classes as needed
+*/
+spl_autoload_register('clockwords_autoload');
+
+/**
+ * Function to include class files
+ * @param string $class the class name we need to load
+ */ 
+function clockwords_autoload($class) {
+  $filename = 'classes/class.'.$class.'.php';
+  if (file_exists($filename)) {
+    include('classes/class.'.$class.'.php');
+  } else {
+    dpr("Class file: ".$filename." not found");
+  }
+}
+/**
+ * Doug's Print R debugging function
+ * @param mixed $var variable to print
+ * @param bool $backtrace print backtrace info
+ * @param bool $die true/false should the function die when done
+ */
+function dpr($var,$backtrace = true,$die = true) {
+  $bt = debug_backtrace();
+  if (!empty($GLOBALS[CLOCKWORDS_DEBUG]) && $GLOBALS[CLOCKWORDS_DEBUG] === TRUE) {
+    print "\n";
+    print_r($var);
+    if ($backtrace) {
+      print "\n[".$bt[0]['file']."][".$bt[0]['line']."]";
+    }
+    if ($die) {
+      die("\n\nend dpr called at: ".$bt[0]['file']." line: ".$bt[0]['line']."\n\n");
+    }
+  } else {
+    $dbg_txt = fopen('debug.txt','a+');
+    fwrite($dbg_txt, "\n".print_r($var)."\n[".$bt[0]['file']."][".$bt[0]['line']."]\n");
+  }
+}
+require_once 'constants.php';
+
+$cwi = new cliinputs;
+
+print "\n";
