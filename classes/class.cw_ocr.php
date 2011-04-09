@@ -90,6 +90,8 @@ class cw_ocr {
         }
         if ($pix_rgb[0] > 180 && $pix_rgb[1] > 180 && $pix_rgb[2] > 180) {
           //do nothing
+        } elseif ($pix_rgb[0] == 69 && $pix_rgb[1] == 41 && $pix_rgb[2] == 36) {
+          $pix_rgb = array(255,255,255);
         } elseif ($pix_rgb[1] != 255) {
           $pix_rgb = array(0,0,0);
         }
@@ -118,13 +120,16 @@ class cw_ocr {
     return $newfilename;
   }
   function getSomeText($filename, $destroy = true) {
-    try { file_exists($filename); } catch (Exception $e) { throw $e; }
+    try { if (!file_exists($filename)) { throw new Exception('file not found'); }; } catch (Exception $e) { throw $e; }
     $cmd = "gocr ".$filename;
     $result = exec($cmd);
+    //tidy up
+    $return = strtolower($result);
+    $return = preg_replace('/[0-9]/','',$return);
     if ($destroy) {
       unlink($filename);
     }
-    return str_replace('5', 's', $result);
+    return str_replace('5', 's', $return);
   }
   function is_valid_image($filename, $type = 'png') {
     if (!file_exists($filename)) {
@@ -139,7 +144,7 @@ class cw_ocr {
   }
   function doOCR() {
     try { $filename = $this->screenGrab(); } catch (Exception $e) { throw $e; }
-    try { $filename = $this->trimImage($filename); } catch (Exception $e) { throw $e; }
+    try { $result = $this->trimImage($filename); } catch (Exception $e) { throw $e; }
     try { $filename = $this->cleanImg($filename); } catch (Exception $e) { throw $e; }
     try { $filename = $this->convertToPNM($filename); } catch (Exception $e) { throw $e; }
     try { $result = $this->getSomeText($filename); } catch (Exception $e) { throw $e; }

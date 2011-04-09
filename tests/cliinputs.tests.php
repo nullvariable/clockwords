@@ -5,6 +5,8 @@ if (!class_exists('PHPUnit_Framework_TestCase')) {
 $folder = '/home/doug/Desktop/clockwords/';
 require_once $folder.'classes/class.cliinputs.php';
 require_once $folder.'classes/class.clockwords.php';
+require_once $folder.'classes/class.cw_ocr.php';
+require_once $folder.'classes/class.cw_words.php';
 require_once $folder.'constants.php';
 require_once $folder.'dpr.php';
 $GLOBALS[CLOCKWORDS_DEBUG] = TRUE;

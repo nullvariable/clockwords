@@ -14,7 +14,7 @@ fclose($f);
 
 function test_word($word) {
   $length = strlen($word);
-  if ($length >= 3 ) {
+  if ($length >= 3 && $length <= 8) {
     if (strpos($word, "'") === false && strtolower($word) === $word) {
       //there are no apostrophes or caps in this word so continue
       $p = '/[\x80-\xFF]/u';

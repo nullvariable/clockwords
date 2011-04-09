@@ -26,9 +26,19 @@ class cliinputs {
         $return[] = false;
         print("\nok, exiting\n");
         break;
+      case 'scr' :
+        $ocr = new cw_ocr;
+        sleep(2);
+        $tmp = $ocr->screenGrab();
+        $ocr->trimImage($tmp);
+        dpr($tmp);
+        exec("eog $tmp &");
+        sleep(3);
+        unlink($tmp);
+        break;
       default :
         throw new Exception("unknown input, exiting");
     }
-    return $return;
+    return;
   }
 }

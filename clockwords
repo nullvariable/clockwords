@@ -22,12 +22,6 @@ require_once 'dpr.php';
 require_once 'constants.php';
 
 $cwi = new cliinputs;
-try {
-  $wordnik = Wordnik::instance(CLOCKWORDS_WORDNIK_KEY);
-  $result = $wordnik->getSuggestions('bt', 10, 0);
-  dpr($result);
-} catch (Exception $e) {
-  dpr($e->getMessage());
-}
+
 
 print "\n";

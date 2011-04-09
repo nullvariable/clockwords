@@ -3,7 +3,7 @@ if (!class_exists('PHPUnit_Framework_TestCase')) {
   include_once '/usr/share/php/PHPUnit/Framework.php';
 }
 $folder = '/home/doug/Desktop/clockwords/';
-require_once $folder.'classes/class.ocr.php';
+require_once $folder.'classes/class.cw_ocr.php';
 //require_once $folder.'classes/class.clockwords.php';
 require_once $folder.'constants.php';
 require_once $folder.'dpr.php';
@@ -12,7 +12,7 @@ $GLOBALS[CLOCKWORDS_DEBUG] = FALSE;
 class ocrTest extends PHPUnit_Framework_TestCase {
   private $inputs;
   public function setUp() {
-    $this->ocr = new ocr();
+    $this->ocr = new cw_ocr();
   }
   public function tearDown() {
     unset($this->ocr);
@@ -128,7 +128,7 @@ class ocrTest extends PHPUnit_Framework_TestCase {
       $this->fail('couldn\'t copy files to convert to PNM image');
     }
     $result = $this->ocr->convertToPNM($imgname);
-    dpr(array('$result',$result,stristr($result, 'pnm')));
+    //dpr(array('$result',$result,stristr($result, 'pnm')));
     $this->assertTrue(file_exists($result));
     $this->assertLessThan(strpos($result, 'pnm'), 0);
     unlink($result);
@@ -149,7 +149,7 @@ class ocrTest extends PHPUnit_Framework_TestCase {
       $this->fail('couldn\'t copy files to convert to PNM image');
     }
     $result = $this->ocr->getSomeText($imgname);
-    $this->assertTrue($result == 'L', "couldn't find the L in our test image");
+    $this->assertEquals('l', $result, "couldn't find the L in our test image");
   }
   public function testGetSomeText_Invalid() {
     try {
