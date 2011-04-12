@@ -47,4 +47,15 @@ class cw_sqliteTest extends PHPUnit_Framework_TestCase {
     $result = $test_db->query("SELECT * FROM words WHERE word LIKE '%q%' AND word LIKE '%z%'");
     $this->assertGreaterThanOrEqual("41", $result->numRows());    
   }*/
+  public function testRemoveWord() {
+    $test_db = $this->cw_sqlite->db();
+    $result = $test_db->query("SELECT * FROM words WHERE word = 'aardvark' LIMIT 10", SQLITE_BOTH, $error);
+    $this->assertEquals(1, count($result->fetchAll()));
+    
+    $result1 = $this->cw_sqlite->removeWord("aardvark");
+    $this->assertTrue($result1);
+    
+    $result2 = $test_db->query("SELECT * FROM [words] WHERE [word] = 'aardvark'");
+    $this->assertEquals(0, count($result2->fetchAll()));
+  }
 }

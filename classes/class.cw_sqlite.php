@@ -27,7 +27,7 @@ class cw_sqlite {
     $db->query("CREATE TABLE words (id INTEGER PRIMARY KEY, word CHAR(255))");
     $cw_words = self::cw_words();
     foreach ($cw_words->allWords as $word) {
-      $db->query("INSERT INTO words (word) VALUES ('$word')");
+      $db->query("INSERT INTO words (word) VALUES ('".trim($word)."')");
     }
   }
   function __construct() {
@@ -35,7 +35,7 @@ class cw_sqlite {
   }
   function getAWord($desired) {
     $words = $this->getWords($desired);
-    while (count($words) < 2) {
+    while (count($words) < 1) {
       $desired = $this->reduceletters($desired);//substr($desired,0,strlen($desired)-1);
       if (strlen($desired) <=0 ) { throw new Exception("Some how ran out of desired letters"); }
       $words = $this->getWords($desired);
@@ -79,4 +79,13 @@ class cw_sqlite {
     }
 		return $return;
   }
+	function removeWord($word) {
+		$db = $this->db();
+		$result = $db->queryexec("DELETE FROM [words] WHERE [word] == '$word'");
+		if (!$result) {
+			throw new Exception("Error deleting word: $word");
+		} else {
+			return true;
+		}
+	}
 }

@@ -17,6 +17,7 @@ class cliinputs {
       switch ($input) {
       case 'd' :
         $GLOBALS[CLOCKWORDS_DEBUG] = TRUE;
+        exec(":>".CLOCKWORDS_ROOT."debug.txt");
         $return[] = 'debug on';
       case 'y' :
         $cw = new clockwords;

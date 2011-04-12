@@ -105,7 +105,7 @@ class cw_ocr {
     }
   
     //$elements = explode('.', $filename);
-    unlink($filename);
+    //unlink($filename);
     $imgname = str_replace(".png", ".jpg", $filename);
     imagejpeg($out, $imgname ); 
     imagedestroy($img);
@@ -119,20 +119,20 @@ class cw_ocr {
     $newfilename = str_replace('.jpg', '.pnm', $filename);
     $cmd = "djpeg -pnm -gray $filename > ".$newfilename;
     exec($cmd);
-    unlink($filename);
+    //unlink($filename);
     return $newfilename;
   }
   function getSomeText($filename, $destroy = true) {
     try { if (!file_exists($filename)) { throw new Exception('file not found'); }; } catch (Exception $e) { throw $e; }
-    $cmd = "gocr ".$filename;
+    $cmd = "gocr -a 50 ".$filename;
     $result = exec($cmd);
     //tidy up
     $return = strtolower($result);
-    $return = preg_replace('/[^a-z5]/','',$return);
+    $return = preg_replace('/[^a-z51]/','',$return);
     if ($destroy) {
-      unlink($filename);
+      //unlink($filename);
     }
-    return str_replace(array('5',' '), array('s',''), $return);
+    return str_replace(array('5','1'), array('s','i'), $return);
   }
   function is_valid_image($filename, $type = 'png') {
     if (!file_exists($filename)) {
@@ -159,20 +159,20 @@ class cw_ocr {
   }
   function patternTest($filename, $pattern) {
     //just return true or false if we found a match
-    $result = shell_exec("visgrep ".escapeshellarg($filename)." ".escapeshellarg($pattern));
+    $result = shell_exec("visgrep -t 200 ".escapeshellarg($filename)." ".escapeshellarg($pattern));
     if (empty($result)) {
-      throw new Exception("No matches were found");
+      throw new Exception("No image pattern matches were found");
     }
     return trim($result);
   }
   function setCoords($filename = false) {
     if (!$filename) { $filename = $this->screenGrab();$rm = true; }
-    $raw = $this->patternTest($filename, CLOCKWORDS_ROOT."match_image.pat");
+    $raw = $this->patternTest($filename, CLOCKWORDS_ROOT."match3.pat");
     $clean = explode(' ', $raw);
     $xy = explode(',', $clean[0]);
-    $GLOBALS[CLOCKWORDS_CROP_X] = $xy[0]+197;
-    $GLOBALS[CLOCKWORDS_CROP_Y] = $xy[1]+424;
-    if (!empty($rm)) { unlink($filename); }//clean up after ourselves 
+    $GLOBALS[CLOCKWORDS_CROP_X] = $xy[0];//+197;
+    $GLOBALS[CLOCKWORDS_CROP_Y] = $xy[1]+(642-222);//+424;
+    //if (!empty($rm)) { unlink($filename); }//clean up after ourselves 
     return true;
   }
 }
