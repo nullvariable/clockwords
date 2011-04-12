@@ -30,6 +30,7 @@ class cliinputs {
         $ocr = new cw_ocr;
         sleep(2);
         $tmp = $ocr->screenGrab();
+        $ocr->setCoords($tmp);
         $ocr->trimImage($tmp);
         dpr($tmp);
         exec("eog $tmp &");
@@ -39,6 +40,6 @@ class cliinputs {
       default :
         throw new Exception("unknown input, exiting");
     }
-    return;
+    return $return;
   }
 }

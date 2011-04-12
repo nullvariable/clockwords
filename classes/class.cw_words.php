@@ -32,6 +32,7 @@ class cw_words {
     return $return;
   }
   function bestWord($words, $keys, $desired) {
+    static $wordsout;
     foreach ($keys as $key) {
       $word=$words[$key];
       $return[$word]=0;
@@ -40,8 +41,14 @@ class cw_words {
         $return[$word]= ($p !=1) ? $return[$word] + $p : $return[$word] - 1;
       }
     }
-    arsort($return);
-    end($return);
+    $wordsout++;
+    asort($return);
+    reset($return);
+    if ($wordsout > 30) {
+      for($i = rand(1,count($return)); $i >= 1; $i--) {
+        next($return);
+      }
+    }
     dpr($return);
     return key($return);
   }

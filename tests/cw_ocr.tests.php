@@ -13,12 +13,54 @@ class ocrTest extends PHPUnit_Framework_TestCase {
   private $inputs;
   public function setUp() {
     $this->ocr = new cw_ocr();
+    $this->images = array(
+      'location-good.png' => array(
+        'source' => CLOCKWORDS_ROOT."tests/images/location-good.png",
+        'dest' => CLOCKWORDS_ROOT."temp/location-good.png",
+        ),
+      'location-bad.png' => array(
+        'source' => CLOCKWORDS_ROOT."tests/images/location-bad.png",
+        'dest' => CLOCKWORDS_ROOT."temp/location-bad.png",
+        ),
+      'ocr-ready-l.pnm' => array(
+        'source' => CLOCKWORDS_ROOT."tests/images/ocr-ready-l.pnm",
+        'dest' => CLOCKWORDS_ROOT."temp/ocr-ready-l.pnm",
+        ),
+      'ocr-ready-l.jpg' => array(
+        'source' => CLOCKWORDS_ROOT."tests/images/ocr-ready-l.jpg",
+        'dest' => CLOCKWORDS_ROOT."temp/ocr-ready-l.jpg",
+        ),
+      'cropthis.png' => array(
+        'source' => CLOCKWORDS_ROOT."tests/images/cropthis.png",
+        'dest' => CLOCKWORDS_ROOT."temp/cropthis.png",
+        ),
+      'cropped.png' => array(
+        'source' => CLOCKWORDS_ROOT."tests/images/cropped.png",
+        'dest' => CLOCKWORDS_ROOT."temp/cropped.png",
+        ),/*
+      'cleanme.png' => array(
+        'source' => CLOCKWORDS_ROOT."tests/images/cleanme.png",
+        'dest' => CLOCKWORDS_ROOT."temp/cleanme.png",
+        ),*/
+    );
+    foreach ($this->images as $image) {
+      $this->do_copy($image['source'], $image['dest']);
+    }
+  }
+  private function do_copy($source, $dest) {
+    $copied = copy($source, $dest);
+    if (!$copied) {
+      $this->fail('couldn\'t copy a file for test setup!!');
+    }
   }
   public function tearDown() {
     unset($this->ocr);
+    foreach ($this->images as $image) {
+      if (file_exists($image['dest'])) { unlink($image['dest']); }
+    }
   }
   public function testConstants() {
-    $cs = array("_X","_Y","_WIDTH","_HEIGHT");
+    $cs = array("_WIDTH","_HEIGHT");
     $test = true;
     foreach ($cs as $c) {
       if (!defined("CLOCKWORDS_CROP$c")) {
@@ -99,12 +141,7 @@ class ocrTest extends PHPUnit_Framework_TestCase {
     $this->fail("expected exception failed for rgb_to_array");
   }
   public function testCleanImg() {
-    $source = CLOCKWORDS_ROOT."tests/images/cropped.png";
-    $imgname = CLOCKWORDS_ROOT."temp/cleanme.png";
-    $copied = copy($source, $imgname);
-    if (!$copied) {
-      $this->fail('couldn\'t copy files to clean image');
-    }
+    $imgname = $this->images['cropped.png']['dest'];
     $result = $this->ocr->cleanImg($imgname);
     $imagesize = getimagesize($result);
     $this->assertEquals($imagesize[0], CLOCKWORDS_CROP_WIDTH);
@@ -121,12 +158,7 @@ class ocrTest extends PHPUnit_Framework_TestCase {
     $this->fail("expected exception for bad image missing");
   }
   public function testConvertToPNM() {
-    $source = CLOCKWORDS_ROOT."tests/images/ocr-ready-l.jpg";
-    $imgname = CLOCKWORDS_ROOT."temp/ocr-ready.jpg";
-    $copied = copy($source, $imgname);
-    if (!$copied) {
-      $this->fail('couldn\'t copy files to convert to PNM image');
-    }
+    $imgname = $this->images['ocr-ready-l.jpg']['dest'];
     $result = $this->ocr->convertToPNM($imgname);
     //dpr(array('$result',$result,stristr($result, 'pnm')));
     $this->assertTrue(file_exists($result));
@@ -142,12 +174,7 @@ class ocrTest extends PHPUnit_Framework_TestCase {
     $this->fail("expected exception for bad image missing");
   }
   public function testGetSomeText() {
-    $source = CLOCKWORDS_ROOT."tests/images/ocr-ready-l.pnm";
-    $imgname = CLOCKWORDS_ROOT."temp/ocr-ready-l.pnm";
-    $copied = copy($source, $imgname);
-    if (!$copied) {
-      $this->fail('couldn\'t copy files to convert to PNM image');
-    }
+    $imgname = $this->images['ocr-ready-l.pnm']['dest'];
     $result = $this->ocr->getSomeText($imgname);
     $this->assertEquals('l', $result, "couldn't find the L in our test image");
   }
@@ -158,5 +185,27 @@ class ocrTest extends PHPUnit_Framework_TestCase {
       return;
     }
     $this->fail("expected exception for GetSomeText did not fire");
+  }
+  public function testPatternTest() {
+    $imgname = $this->images['location-good.png']['dest'];
+    $result = $this->ocr->patternTest($imgname, CLOCKWORDS_ROOT."match_image.pat");
+    $this->assertEquals("135,167 -1", $result);
+    unlink($imgname);
+  }
+  public function testPatternTest_Invalid() {
+    $imgname = $this->images['location-bad.png']['dest'];
+    $this->setExpectedException("Exception", "No matches were found");
+    try {
+      $result = $this->ocr->patternTest($imgname, CLOCKWORDS_ROOT."match_image.pat");
+    } catch (Exception $e) {
+      unlink($imgname);
+      throw $e;
+    }
+  }
+  public function testSetCoords() {
+    $imgname = $this->images['location-good.png']['dest'];
+    $result = $this->ocr->setCoords($imgname);
+    $this->assertEquals("332", $GLOBALS[CLOCKWORDS_CROP_X]);
+    $this->assertEquals("587", $GLOBALS[CLOCKWORDS_CROP_Y]);
   }
 }

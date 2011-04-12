@@ -50,8 +50,11 @@ class cw_ocr {
    */
   function trimImage($filename) {
     try { $this->is_valid_image($filename,'png'); } catch (Exception $e) { throw $e; }
-    if (!is_numeric(CLOCKWORDS_CROP_X) || !is_numeric(CLOCKWORDS_CROP_Y) || !is_numeric(CLOCKWORDS_CROP_WIDTH) || !is_numeric(CLOCKWORDS_CROP_HEIGHT)) {
+    if (!is_numeric(CLOCKWORDS_CROP_WIDTH) || !is_numeric(CLOCKWORDS_CROP_HEIGHT)) {
       throw new Exception("oops, something is wrong with our dimesion constants");
+    }
+    if (empty($GLOBALS[CLOCKWORDS_CROP_X]) || empty($GLOBALS[CLOCKWORDS_CROP_Y]) || !is_numeric($GLOBALS[CLOCKWORDS_CROP_X]) || !is_numeric($GLOBALS[CLOCKWORDS_CROP_Y])) {
+      try { $this->setCoords($filename); } catch (Exception $e) { throw $e; }
     }
     $finalimg = imagecreatetruecolor(CLOCKWORDS_CROP_WIDTH,CLOCKWORDS_CROP_HEIGHT);
     $screenshot = imagecreatefrompng($filename);
@@ -60,8 +63,8 @@ class cw_ocr {
       $screenshot,
       0,
       0,
-      CLOCKWORDS_CROP_X,
-      CLOCKWORDS_CROP_Y,
+      $GLOBALS[CLOCKWORDS_CROP_X],
+      $GLOBALS[CLOCKWORDS_CROP_Y],
       CLOCKWORDS_CROP_WIDTH,
       CLOCKWORDS_CROP_HEIGHT,
       CLOCKWORDS_CROP_WIDTH,
@@ -125,11 +128,11 @@ class cw_ocr {
     $result = exec($cmd);
     //tidy up
     $return = strtolower($result);
-    $return = preg_replace('/[0-9]/','',$return);
+    $return = preg_replace('/[^a-z5]/','',$return);
     if ($destroy) {
       unlink($filename);
     }
-    return str_replace('5', 's', $return);
+    return str_replace(array('5',' '), array('s',''), $return);
   }
   function is_valid_image($filename, $type = 'png') {
     if (!file_exists($filename)) {
@@ -142,8 +145,8 @@ class cw_ocr {
     }
     return true;
   }
-  function doOCR() {
-    try { $filename = $this->screenGrab(); } catch (Exception $e) { throw $e; }
+  function doOCR($filename=false) {
+    if (!$filename) { try { $filename = $this->screenGrab(); } catch (Exception $e) { throw $e; } }
     try { $result = $this->trimImage($filename); } catch (Exception $e) { throw $e; }
     try { $filename = $this->cleanImg($filename); } catch (Exception $e) { throw $e; }
     try { $filename = $this->convertToPNM($filename); } catch (Exception $e) { throw $e; }
@@ -153,6 +156,24 @@ class cw_ocr {
     } else {
       throw new Exception("no text found",100);
     }
+  }
+  function patternTest($filename, $pattern) {
+    //just return true or false if we found a match
+    $result = shell_exec("visgrep ".escapeshellarg($filename)." ".escapeshellarg($pattern));
+    if (empty($result)) {
+      throw new Exception("No matches were found");
+    }
+    return trim($result);
+  }
+  function setCoords($filename = false) {
+    if (!$filename) { $filename = $this->screenGrab();$rm = true; }
+    $raw = $this->patternTest($filename, CLOCKWORDS_ROOT."match_image.pat");
+    $clean = explode(' ', $raw);
+    $xy = explode(',', $clean[0]);
+    $GLOBALS[CLOCKWORDS_CROP_X] = $xy[0]+197;
+    $GLOBALS[CLOCKWORDS_CROP_Y] = $xy[1]+424;
+    if (!empty($rm)) { unlink($filename); }//clean up after ourselves 
+    return true;
   }
 }
 

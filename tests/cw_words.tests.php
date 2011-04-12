@@ -10,7 +10,6 @@ require_once $folder.'dpr.php';
 $GLOBALS[CLOCKWORDS_DEBUG] = FALSE;
 
 class cw_wordsTest extends PHPUnit_Framework_TestCase {
-  private $inputs;
   public function setUp() {
     $this->cw_words = cw_words::instance();
   }

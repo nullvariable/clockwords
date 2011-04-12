@@ -4,12 +4,13 @@ if (!class_exists('PHPUnit_Framework_TestCase')) {
 }
 $folder = '/home/doug/Desktop/clockwords/';
 require_once $folder.'classes/class.cliinputs.php';
-require_once $folder.'classes/class.clockwords.php';
+//require_once $folder.'classes/class.clockwords.php';
 require_once $folder.'classes/class.cw_ocr.php';
 require_once $folder.'classes/class.cw_words.php';
+require_once $folder.'classes/class.cw_sqlite.php';
 require_once $folder.'constants.php';
 require_once $folder.'dpr.php';
-$GLOBALS[CLOCKWORDS_DEBUG] = TRUE;
+$GLOBALS[CLOCKWORDS_DEBUG] = FALSE;
 
 class cliinputsTest extends PHPUnit_Framework_TestCase {
   private $inputs;
@@ -19,6 +20,7 @@ class cliinputsTest extends PHPUnit_Framework_TestCase {
   public function tearDown() {
   }
   public function testInput() {
+    $fake = $this->getMock("clockwords");
     $act = cliinputs::process_input('y');
     $this->assertEquals(count($act), 1);
     $act2 = cliinputs::process_input('n');
@@ -27,6 +29,7 @@ class cliinputsTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals(count($act3), 2);
   }
   public function testInput_Invalid() {
+    //$fake = $this->getMock("clockwords");
     $this->setExpectedException('Exception');
     cliinputs::process_input(" ");
   }
